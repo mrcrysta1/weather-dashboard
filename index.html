@@ -3,14 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weather Dashboard</title>
+  <title>Weather Dashboard v2</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛅</text></svg>">
 </head>
-<body>
+<body id="body">
+  <div class="particles" id="particles"></div>
+
   <div class="app">
     <header>
-      <h1>Weather Dashboard</h1>
+      <div class="top-bar">
+        <h1>Weather Dashboard</h1>
+        <div class="controls">
+          <button id="unit-toggle" class="unit-btn" title="Toggle °C / °F">°C</button>
+          <button id="locate-btn" class="locate-btn" title="Use my location">📍 My Location</button>
+        </div>
+      </div>
       <div class="search-box">
         <input type="text" id="search" placeholder="Search city..." autocomplete="off">
         <button id="search-btn">Search</button>
@@ -18,13 +26,30 @@
     </header>
 
     <main id="main" class="hidden">
+      <!-- Current Weather -->
       <section class="current" id="current"></section>
+
+      <!-- Event Suggestions -->
+      <section class="events-section">
+        <h2>Event Recommendations</h2>
+        <div id="events-grid" class="events-grid"></div>
+      </section>
+
+      <!-- Hourly Chart -->
       <section class="hourly">
-        <h2>Hourly Forecast</h2>
+        <h2>Hourly Forecast (24h)</h2>
         <div class="chart-container">
           <canvas id="hourly-chart"></canvas>
         </div>
       </section>
+
+      <!-- Sunrise / Sunset -->
+      <section class="sun-section">
+        <h2>Sunrise &amp; Sunset</h2>
+        <div id="sun-cards" class="sun-cards"></div>
+      </section>
+
+      <!-- 7-Day Forecast -->
       <section class="daily">
         <h2>7-Day Forecast</h2>
         <div id="daily-grid" class="daily-grid"></div>
@@ -40,7 +65,7 @@
   </div>
 
   <footer>
-    <p>Powered by <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> | Built with ❤️</p>
+    <p>Powered by <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> | Built with ❤️ | v2.0</p>
   </footer>
 
   <script src="app.js"></script>
