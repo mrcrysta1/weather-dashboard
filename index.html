@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛅</text></svg>">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Weather Dashboard</h1>
+      <div class="search-box">
+        <input type="text" id="search" placeholder="Search city..." autocomplete="off">
+        <button id="search-btn">Search</button>
+      </div>
+    </header>
+
+    <main id="main" class="hidden">
+      <section class="current" id="current"></section>
+      <section class="hourly">
+        <h2>Hourly Forecast</h2>
+        <div class="chart-container">
+          <canvas id="hourly-chart"></canvas>
+        </div>
+      </section>
+      <section class="daily">
+        <h2>7-Day Forecast</h2>
+        <div id="daily-grid" class="daily-grid"></div>
+      </section>
+    </main>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Fetching weather data...</p>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+  </div>
+
+  <footer>
+    <p>Powered by <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> | Built with ❤️</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
