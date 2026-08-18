@@ -1,9 +1,11 @@
 const GEO = "https://geocoding-api.open-meteo.com/v1/search";
 const WEATHER = "https://api.open-meteo.com/v1/forecast";
+const AIR_QUALITY = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
 let useFahrenheit = false;
 let lastWeather = null;
 let lastCity = null;
+let favorites = JSON.parse(localStorage.getItem("weather_favorites") || "[]");
 
 const WMO_CODES = {
   0: ["☀️", "Clear sky", "clear"],
@@ -441,11 +443,17 @@ async function loadWeather(cityName) {
     renderEvents(weather);
     renderHourlyChart(weather);
     renderDaily(weather);
+    checkAlerts(weather);
+    updateFavButton();
 
     // Sunrise/sunset
     if (weather.daily.sunrise?.[0]) {
       renderSun(weather.daily.sunrise[0], weather.daily.sunset[0]);
     }
+
+    // Air quality
+    const aqiData = await loadAirQuality(city.latitude, city.longitude);
+    renderAirQuality(aqiData);
 
     showMain();
     history.replaceState(null, "", `?city=${encodeURIComponent(city.name)}`);
@@ -503,6 +511,190 @@ function toggleUnit() {
   }
 }
 
+// --- Favorites ---
+function saveFavorites() {
+  localStorage.setItem("weather_favorites", JSON.stringify(favorites));
+}
+
+function toggleFavorite() {
+  if (!lastCity) return;
+  const name = lastCity.name;
+  const idx = favorites.findIndex((f) => f.name === name);
+  if (idx >= 0) {
+    favorites.splice(idx, 1);
+  } else {
+    favorites.push({ name, lat: lastCity.latitude, lon: lastCity.longitude });
+  }
+  saveFavorites();
+  renderFavorites();
+  updateFavButton();
+}
+
+function updateFavButton() {
+  const btn = $("#fav-btn");
+  if (!lastCity) return;
+  const isFav = favorites.some((f) => f.name === lastCity.name);
+  btn.textContent = isFav ? "⭐" : "☆";
+  btn.classList.toggle("active", isFav);
+}
+
+function renderFavorites() {
+  const bar = $("#favorites-bar");
+  const list = $("#favorites-list");
+  if (favorites.length === 0) {
+    bar.classList.add("hidden");
+    return;
+  }
+  bar.classList.remove("hidden");
+  list.innerHTML = favorites
+    .map(
+      (f, i) =>
+        `<div class="fav-chip" data-idx="${i}">
+          <span class="fav-name">${f.name}</span>
+          <span class="fav-remove" data-idx="${i}">&times;</span>
+        </div>`
+    )
+    .join("");
+
+  list.querySelectorAll(".fav-chip").forEach((chip) => {
+    chip.addEventListener("click", (e) => {
+      if (e.target.classList.contains("fav-remove")) {
+        const idx = parseInt(e.target.dataset.idx);
+        favorites.splice(idx, 1);
+        saveFavorites();
+        renderFavorites();
+        updateFavButton();
+        return;
+      }
+      const idx = parseInt(chip.dataset.idx);
+      const fav = favorites[idx];
+      if (fav.name) loadWeather(fav.name);
+    });
+  });
+}
+
+// --- Share ---
+async function shareWeather() {
+  if (!lastWeather || !lastCity) return;
+  const c = lastWeather.current;
+  const [icon, desc] = getWMO(c.weather_code);
+  const text = `${icon} ${lastCity.name}: ${Math.round(c.temperature_2m)}°C, ${desc}\n🌡 Feels like ${Math.round(c.apparent_temperature)}°C | 💧 ${c.relative_humidity_2m}% | 💨 ${Math.round(c.wind_speed_10m)} km/h\n\nvia Weather Dashboard`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `Weather - ${lastCity.name}`, text });
+    } catch {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = $("#share-btn");
+      btn.textContent = "✅ Copied!";
+      setTimeout(() => (btn.textContent = "📤 Share"), 2000);
+    } catch {
+      alert("Copy this:\n\n" + text);
+    }
+  }
+}
+
+// --- Weather Alerts ---
+function checkAlerts(weather) {
+  const c = weather.current;
+  const alerts = [];
+
+  if (c.uv_index >= 8) {
+    alerts.push({ icon: "⚠️", title: "Extreme UV Index", desc: `UV index is ${c.uv_index.toFixed(1)} — avoid outdoor exposure` });
+  }
+  if (c.wind_speed_10m > 50) {
+    alerts.push({ icon: "💨", title: "High Wind Warning", desc: `Wind speed ${Math.round(c.wind_speed_10m)} km/h — secure loose objects` });
+  }
+  if (c.temperature_2m > 40) {
+    alerts.push({ icon: "🔥", title: "Extreme Heat", desc: `${Math.round(c.temperature_2m)}°C — stay hydrated, avoid sun` });
+  }
+  if (c.temperature_2m < -10) {
+    alerts.push({ icon: "🥶", title: "Extreme Cold", desc: `${Math.round(c.temperature_2m)}°C — bundle up, risk of frostbite` });
+  }
+
+  const rainChance = weather.daily.precipitation_probability_max?.[0] ?? 0;
+  if (rainChance >= 80) {
+    alerts.push({ icon: "🌧", title: "Heavy Rain Expected", desc: `${rainChance}% chance — flash flood risk in low areas` });
+  }
+
+  const code = c.weather_code;
+  if (code >= 95) {
+    alerts.push({ icon: "⛈", title: "Thunderstorm Alert", desc: "Severe thunderstorm — stay indoors if possible" });
+  }
+
+  const alertEl = $("#weather-alert");
+  if (alerts.length === 0) {
+    alertEl.classList.add("hidden");
+    return;
+  }
+
+  alertEl.classList.remove("hidden");
+  alertEl.innerHTML = alerts
+    .map(
+      (a) => `
+    <div class="alert-icon">${a.icon}</div>
+    <div class="alert-text">
+      <div class="alert-title">${a.title}</div>
+      <div class="alert-desc">${a.desc}</div>
+    </div>
+  `
+    )
+    .join("") + '<button class="alert-close" onclick="this.parentElement.classList.add(\'hidden\')">&times;</button>';
+}
+
+// --- Air Quality ---
+async function loadAirQuality(lat, lon) {
+  try {
+    const res = await fetch(`${AIR_QUALITY}?latitude=${lat}&longitude=${lon}&current=european_aqi,us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide`);
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function renderAirQuality(aqiData) {
+  const cards = $("#aqi-cards");
+  if (!aqiData?.current) {
+    cards.innerHTML = '<div class="aqi-card"><div class="aqi-label">Air Quality</div><div class="aqi-value">—</div><div class="aqi-status">Data unavailable</div></div>';
+    return;
+  }
+
+  const c = aqiData.current;
+  const usAqi = c.us_aqi ?? 0;
+  let status, cls;
+
+  if (usAqi <= 50) { status = "Good"; cls = "aqi-good"; }
+  else if (usAqi <= 100) { status = "Moderate"; cls = "aqi-moderate"; }
+  else if (usAqi <= 150) { status = "Unhealthy (Sensitive)"; cls = "aqi-unhealthy"; }
+  else if (usAqi <= 200) { status = "Unhealthy"; cls = "aqi-bad"; }
+  else { status = "Very Unhealthy"; cls = "aqi-very-bad"; }
+
+  cards.innerHTML = `
+    <div class="aqi-card ${cls}">
+      <div class="aqi-label">US AQI</div>
+      <div class="aqi-value">${usAqi}</div>
+      <div class="aqi-status">${status}</div>
+    </div>
+    <div class="aqi-card">
+      <div class="aqi-label">PM2.5</div>
+      <div class="aqi-value">${c.pm2_5?.toFixed(1) ?? "—"}</div>
+      <div class="aqi-status">µg/m³</div>
+    </div>
+    <div class="aqi-card">
+      <div class="aqi-label">PM10</div>
+      <div class="aqi-value">${c.pm10?.toFixed(1) ?? "—"}</div>
+      <div class="aqi-status">µg/m³</div>
+    </div>
+    <div class="aqi-card">
+      <div class="aqi-label">NO₂</div>
+      <div class="aqi-value">${c.nitrogen_dioxide?.toFixed(1) ?? "—"}</div>
+      <div class="aqi-status">µg/m³</div>
+    </div>
+  `;
+}
+
 // --- Init ---
 const params = new URLSearchParams(window.location.search);
 const initCity = params.get("city");
@@ -546,6 +738,11 @@ $("#search").addEventListener("keydown", (e) => {
 
 $("#locate-btn").addEventListener("click", loadMyLocation);
 $("#unit-toggle").addEventListener("click", toggleUnit);
+$("#share-btn").addEventListener("click", shareWeather);
+$("#fav-btn").addEventListener("click", toggleFavorite);
+
+// Render favorites on load
+renderFavorites();
 
 // Redraw chart on resize
 let resizeTimer;

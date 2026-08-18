@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weather Dashboard v2</title>
+  <title>Weather Dashboard v2.1</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛅</text></svg>">
 </head>
@@ -17,17 +17,34 @@
         <div class="controls">
           <button id="unit-toggle" class="unit-btn" title="Toggle °C / °F">°C</button>
           <button id="locate-btn" class="locate-btn" title="Use my location">📍 My Location</button>
+          <button id="share-btn" class="share-btn" title="Share weather">📤 Share</button>
         </div>
       </div>
       <div class="search-box">
         <input type="text" id="search" placeholder="Search city..." autocomplete="off">
         <button id="search-btn">Search</button>
+        <button id="fav-btn" class="fav-btn" title="Save to favorites">⭐</button>
       </div>
     </header>
 
+    <!-- Favorites Bar -->
+    <div id="favorites-bar" class="favorites-bar hidden">
+      <h3>⭐ Favorites</h3>
+      <div id="favorites-list" class="favorites-list"></div>
+    </div>
+
     <main id="main" class="hidden">
+      <!-- Weather Alert -->
+      <div id="weather-alert" class="weather-alert hidden"></div>
+
       <!-- Current Weather -->
       <section class="current" id="current"></section>
+
+      <!-- Air Quality -->
+      <section class="aqi-section">
+        <h2>Air Quality</h2>
+        <div id="aqi-cards" class="aqi-cards"></div>
+      </section>
 
       <!-- Event Suggestions -->
       <section class="events-section">
@@ -65,7 +82,7 @@
   </div>
 
   <footer>
-    <p>Powered by <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> | Built with ❤️ | v2.0</p>
+    <p>Powered by <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> | Built with ❤️ | v2.1</p>
   </footer>
 
   <script src="app.js"></script>
