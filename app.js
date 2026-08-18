@@ -695,6 +695,56 @@ function renderAirQuality(aqiData) {
   `;
 }
 
+// --- Compare Cities ---
+async function compareCities(cityName) {
+  const grid = $("#compare-grid");
+  grid.classList.remove("hidden");
+  grid.innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div><p>Comparing...</p></div>';
+
+  try {
+    const city2 = await searchCity(cityName);
+    const weather2 = await getWeather(city2.latitude, city2.longitude);
+
+    // Get current city weather from lastWeather
+    if (!lastWeather || !lastCity) {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#888;text-align:center;">Load a city first to compare.</p>';
+      return;
+    }
+
+    const c1 = lastWeather.current;
+    const c2 = weather2.current;
+    const [icon1, desc1] = getWMO(c1.weather_code);
+    const [icon2, desc2] = getWMO(c2.weather_code);
+
+    // Determine which is better (higher temp for cold days, lower for hot)
+    const avgTemp = (c1.temperature_2m + c2.temperature_2m) / 2;
+    const winner1 = avgTemp > 25 ? c1.temperature_2m < c2.temperature_2m : c1.temperature_2m > c2.temperature_2m;
+
+    function compareCard(city, c, icon, desc, isWinner) {
+      return `
+        <div class="compare-card ${isWinner ? 'winner' : ''}">
+          <div class="cc-city">${city.name}</div>
+          <div class="cc-icon">${icon}</div>
+          <div class="cc-temp">${tempStr(c.temperature_2m)}</div>
+          <div class="cc-desc">${desc}</div>
+          <div class="cc-details">
+            <div class="cc-detail"><div class="label">Feels</div><div class="val">${tempStr(c.apparent_temperature)}</div></div>
+            <div class="cc-detail"><div class="label">Humidity</div><div class="val">${c.relative_humidity_2m}%</div></div>
+            <div class="cc-detail"><div class="label">Wind</div><div class="val">${Math.round(c.wind_speed_10m)} km/h</div></div>
+            <div class="cc-detail"><div class="label">UV</div><div class="val">${c.uv_index?.toFixed(1) ?? "—"}</div></div>
+          </div>
+        </div>`;
+    }
+
+    grid.innerHTML =
+      compareCard(lastCity, c1, icon1, desc1, winner1) +
+      compareCard(city2, c2, icon2, desc2, !winner1);
+
+  } catch (err) {
+    grid.innerHTML = `<p style="grid-column:1/-1;color:#f87171;text-align:center;">${err.message}</p>`;
+  }
+}
+
 // --- Init ---
 const params = new URLSearchParams(window.location.search);
 const initCity = params.get("city");
@@ -743,6 +793,19 @@ $("#fav-btn").addEventListener("click", toggleFavorite);
 
 // Render favorites on load
 renderFavorites();
+
+// Compare cities
+$("#compare-btn").addEventListener("click", () => {
+  const q = $("#compare-city").value.trim();
+  if (q) compareCities(q);
+});
+
+$("#compare-city").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const q = $("#compare-city").value.trim();
+    if (q) compareCities(q);
+  }
+});
 
 // Redraw chart on resize
 let resizeTimer;

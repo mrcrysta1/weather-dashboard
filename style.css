@@ -307,6 +307,102 @@ h2 {
 .day-card .day-rain { font-size: 0.75rem; color: var(--accent); margin-top: 0.4rem; }
 .day-card .day-wind { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
 
+/* Compare Cities */
+.compare-section { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+
+.compare-input {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 400px;
+}
+
+.compare-input input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.compare-input input:focus { border-color: var(--accent); }
+
+.compare-input button {
+  padding: 0.6rem 1.2rem;
+  background: var(--accent2);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.compare-input button:hover { transform: scale(1.05); }
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.compare-card {
+  background: var(--card);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 1.2rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  animation: fadeIn 0.4s ease;
+}
+
+.compare-card .cc-city {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.compare-card .cc-icon { font-size: 2rem; margin: 0.3rem 0; }
+
+.compare-card .cc-temp {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.compare-card .cc-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: capitalize;
+  margin-bottom: 0.8rem;
+}
+
+.compare-card .cc-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.compare-card .cc-detail {
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  text-align: center;
+}
+
+.compare-card .cc-detail .label { color: var(--muted); font-size: 0.7rem; }
+.compare-card .cc-detail .val { font-weight: 700; font-size: 0.9rem; }
+
+.compare-card.winner { border-color: rgba(34,197,94,0.3); }
+.compare-card.winner .cc-city::after { content: " 🏆"; font-size: 0.8rem; }
+
 .loading, .error { text-align: center; padding: 3rem 1rem; color: var(--muted); }
 
 .spinner {
